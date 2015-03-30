@@ -9,12 +9,10 @@ import socket as _orig_sock
 import sys
 import tempfile
 
-from nose.tools import eq_
-
 from eventlet import event, greenio, debug
 from eventlet.hubs import get_hub
 from eventlet.green import select, socket, time, ssl
-from eventlet.support import capture_stderr, get_errno, six
+from eventlet.support import get_errno, six
 from tests import (
     LimitedTestCase, main,
     skip_with_pyevent, skipped, skip_if, skip_on_windows,
@@ -907,11 +905,20 @@ def test_socket_del_fails_gracefully_when_not_fully_initialized():
         def __init__(self):
             pass
 
-    with capture_stderr() as err:
+    # A modification of the original test to minimize code changes to the
+    # underlying testing infrastructure. The original (from v0.16) relies upon
+    # testing changes made in v0.16. Here, we drag that functionality out of
+    # the testing infra and into this test itself.
+    stream = six.StringIO()
+    original = sys.stderr
+    try:
+        sys.stderr = stream
         SocketSubclass()
+        assert stream.getvalue() == ''
 
-    assert err.getvalue() == ''
-
+    finally:
+        sys.stderr = original
+        stream.seek(0)
 
 if __name__ == '__main__':
     main()
